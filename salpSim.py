@@ -7,6 +7,7 @@ from pymunk.vec2d import Vec2d
 from pymunk.constraints import DampedSpring
 
 space = pymunk.Space()
+space.damping = 0.5
 disp = 800
 screen = pygame.display.set_mode((disp, disp))
 pygame.display.set_caption('Salp Search Simulation')
@@ -74,8 +75,7 @@ class Salp:
     def getSalpConc(self, origin, t, D):
         return get_concentration_at_point(self.get_normalized_position(), origin, t, D)
 
-    def jetPropel(self, salpChain, threshold, seed):
-        thrustVec = salpChain.getThrustVec()
+    def jetPropel(self, thrustVec, threshold, seed):
         if seed < threshold:
             self.body.apply_impulse_at_local_point(thrustVec * self.thrust, (0, 0))
             return True
@@ -88,11 +88,11 @@ class Salp:
         thresholdAdd = thresholdConst * (1 - self.default_threshold) * (1 - np.tanh(salpConc))
         return thresholdAdd
 
-    def jetDecision(self, origin, t, D, salpChain):
+    def jetDecision(self, origin, t, D, thrustVec):
         seed = np.random.rand()
-        if self.jetPropel(salpChain, self.threshold, seed):
+        if self.jetPropel(thrustVec, self.threshold, seed):
             self.threshold = self.default_threshold
-        elif not self.jetPropel(salpChain, self.threshold, seed):
+        elif not self.jetPropel(thrustVec, self.threshold, seed):
             self.threshold += self.thresholdUpdate(origin, t, D)
 
 
@@ -107,6 +107,7 @@ class SalpChain:
         self.distance = 15
         self.thrust = 2
         self.salpList = []
+        self.springList = []
         self.flipDirection = False
 
     def makeChain(self):
@@ -133,6 +134,18 @@ class SalpChain:
             chainVec = Vec2d(salp1.get_game_position) - Vec2d(salp2.get_game_position)
         return chainVec.perpendicular_normal()
 
+    def drawChain(self):
+        for i in range(0, len(self.salpList) - 1):
+            salp1 = self.salpList[i]
+            salp1.draw()
+            salp2 = self.salpList[i + 1]
+            salp2.draw()
+            pygame.draw.aaline(screen, (0, 0, 0), salp1.get_game_position(), salp2.get_game_position())
+
+    def chainThrust(self, origin, t, D):
+        for salp in self.salpList:
+            salp.jetDecision(origin, t, D, self.getThrustVec())
+
 
 class App:
     def __init__(self, FPS):
@@ -147,10 +160,12 @@ class App:
         self.diffCoeff = 0.0005
         get_concentration_at_point((1, 1), (20, 20), 1, 0.1)  # dummy calls to compile numba function
         get_concentration_array((10, 10), (5, 5), 2, 0.1)
+        self.salpChain = SalpChain((1, 1), 2, (400, 400))
+        self.salpChain.makeChain()
+        self.salpChain.makeConnections()
 
     def run(self):
         columns, rows = pygame.display.get_window_size()
-        salp1 = Salp(5, 2, (20, 20))
         while self.running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -172,13 +187,9 @@ class App:
                 arr = get_concentration_array((rows, columns), self.unitClickPos, t, self.diffCoeff)
                 grayscaleArr = gray(arr)
                 pygame.surfarray.blit_array(screen, grayscaleArr)
-                salpconc = salp1.getSalpConc(self.unitClickPos, t, self.diffCoeff)
-                print(salp1.get_normalized_position())
-                if salpconc > 5:
-                    salp1.body.apply_impulse_at_local_point((10, 10), (0, 0))
+                self.salpChain.chainThrust(self.unitClickPos, t, self.diffCoeff)
 
-            salp1.draw()
-
+            self.salpChain.drawChain()
             pygame.display.update()
             self.clock.tick(self.fps)
             space.step(1 / self.fps)
