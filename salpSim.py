@@ -4,7 +4,7 @@ import pymunk
 import math
 from numba import jit
 from pymunk.vec2d import Vec2d
-from pymunk.constraints import DampedSpring
+from pymunk.constraints import DampedSpring, PinJoint
 
 space = pymunk.Space()
 space.damping = 0.5
@@ -23,7 +23,7 @@ def get_concentration_at_point(point, origin, t, D):
     if t == 0:
         return 255
     else:
-        return int((30 / (math.sqrt(12.56 * D * t))) * np.exp(-l2 / (4 * D * t)))
+        return int((60 / (math.sqrt(12.56 * D * t))) * np.exp(-l2 / (4 * D * t)))
 
 
 @jit(nopython=True)
@@ -56,7 +56,7 @@ class Salp:
         self.body.position = pos
         self.shape = pymunk.Circle(self.body, self.radius)
         self.shape.density = 1
-        self.default_threshold = 0.01
+        self.default_threshold = 0.001
         self.threshold = self.default_threshold
         space.add(self.body, self.shape)
 
@@ -83,7 +83,7 @@ class Salp:
             return False
 
     def thresholdUpdate(self, origin, t, D):
-        salpConc = self.getSalpConc(origin, t, D)
+        salpConc = self.getSalpConc(origin, t, D) / 255
         thresholdConst = 0.003
         thresholdAdd = thresholdConst * (1 - self.default_threshold) * (1 - np.tanh(salpConc))
         return thresholdAdd
@@ -101,11 +101,13 @@ class Salp:
 # noinspection PyArgumentList
 class SalpChain:
     def __init__(self, startVec: tuple, number, startPos: tuple):
-        self.startVec = Vec2d(startVec).normalized()
+        vecx, vecy = startVec
+        self.startVec = Vec2d(vecx, vecy).normalized()
         self.number = number
-        self.startPos = Vec2d(startPos)
+        posx, posy = startPos
+        self.startPos = Vec2d(posx, posy)
         self.distance = 15
-        self.thrust = 2
+        self.thrust = 50
         self.salpList = []
         self.springList = []
         self.flipDirection = False
@@ -121,18 +123,23 @@ class SalpChain:
         for i in range(0, len(self.salpList) - 1):
             salp1 = self.salpList[i]
             salp2 = self.salpList[i + 1]
-            spring = DampedSpring(salp1.body, salp2.body, (0, 0), (0, 0), self.distance, 100000, 1000)
+            spring = DampedSpring(salp1.body, salp2.body, (0, 0), (0, 0), self.distance, 1000000, 1000)
+            # beam = PinJoint(salp1.body, salp2.body, (0, 0), (0, 0))
             pygame.draw.aaline(screen, (0, 0, 0), salp1.get_game_position(), salp2.get_game_position())
             space.add(spring)
 
     def getThrustVec(self):
+        chainVec = Vec2d(0, 0)
         salp1 = self.salpList[0]
         salp2 = self.salpList[-1]
+        p1x, p1y = salp1.body.position
+        p2x, p2y = salp2.body.position
         if self.flipDirection:
-            chainVec = Vec2d(salp2.get_game_position) - Vec2d(salp1.get_game_position)
-        else:
-            chainVec = Vec2d(salp1.get_game_position) - Vec2d(salp2.get_game_position)
-        return chainVec.perpendicular_normal()
+            chainVec = Vec2d(p2x, p2y) - Vec2d(p1x, p1y)
+        elif not self.flipDirection:
+            chainVec = Vec2d(p1x, p1y) - Vec2d(p2x, p2y)
+        thrustVec = chainVec.perpendicular_normal()
+        return thrustVec
 
     def drawChain(self):
         for i in range(0, len(self.salpList) - 1):
@@ -146,6 +153,10 @@ class SalpChain:
         for salp in self.salpList:
             salp.jetDecision(origin, t, D, self.getThrustVec())
 
+    def pushSalp(self, ndx):
+        salp = self.salpList[ndx]
+        salp.jetPropel(self.getThrustVec(), 0.9, 0.5)
+
 
 class App:
     def __init__(self, FPS):
@@ -157,7 +168,7 @@ class App:
         self.unitClickPos = self.clickPos
         self.clickTime = 0
         self.clickFlag = False
-        self.diffCoeff = 0.0005
+        self.diffCoeff = 0.005
         get_concentration_at_point((1, 1), (20, 20), 1, 0.1)  # dummy calls to compile numba function
         get_concentration_array((10, 10), (5, 5), 2, 0.1)
         self.salpChain = SalpChain((1, 1), 2, (400, 400))
