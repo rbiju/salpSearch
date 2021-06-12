@@ -6,3 +6,6 @@
 .idea/modules.xml
 .idea/salpSearch.iml
 __pycache__/
+/sample.png
+.idea/vcs.xml
+/joint1.py

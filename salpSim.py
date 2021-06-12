@@ -4,10 +4,10 @@ import pymunk
 import math
 from numba import jit
 from pymunk.vec2d import Vec2d
-from pymunk.constraints import DampedSpring, PinJoint
+from pymunk.constraints import DampedSpring
 
 space = pymunk.Space()
-space.damping = 0.5
+space.damping = 0.8
 disp = 800
 screen = pygame.display.set_mode((disp, disp))
 pygame.display.set_caption('Salp Search Simulation')
@@ -84,7 +84,7 @@ class Salp:
 
     def thresholdUpdate(self, origin, t, D):
         salpConc = self.getSalpConc(origin, t, D) / 255
-        thresholdConst = 0.003
+        thresholdConst = 0.00001
         thresholdAdd = thresholdConst * (1 - self.default_threshold) * (1 - np.tanh(salpConc))
         return thresholdAdd
 
@@ -106,11 +106,11 @@ class SalpChain:
         self.number = number
         posx, posy = startPos
         self.startPos = Vec2d(posx, posy)
-        self.distance = 15
-        self.thrust = 50
+        self.distance = 5
+        self.thrust = 1000
         self.salpList = []
-        self.springList = []
-        self.flipDirection = False
+        self.beamList = []
+        self.flipDirection = True
 
     def makeChain(self):
         firstPos = self.startPos - (self.number * self.distance * self.startVec)
@@ -123,8 +123,7 @@ class SalpChain:
         for i in range(0, len(self.salpList) - 1):
             salp1 = self.salpList[i]
             salp2 = self.salpList[i + 1]
-            spring = DampedSpring(salp1.body, salp2.body, (0, 0), (0, 0), self.distance, 1000000, 1000)
-            # beam = PinJoint(salp1.body, salp2.body, (0, 0), (0, 0))
+            spring = DampedSpring(salp1.body, salp2.body, (0, 0), (0, 0), self.distance, 200, 20)
             pygame.draw.aaline(screen, (0, 0, 0), salp1.get_game_position(), salp2.get_game_position())
             space.add(spring)
 
@@ -168,10 +167,10 @@ class App:
         self.unitClickPos = self.clickPos
         self.clickTime = 0
         self.clickFlag = False
-        self.diffCoeff = 0.005
+        self.diffCoeff = 0.0009
         get_concentration_at_point((1, 1), (20, 20), 1, 0.1)  # dummy calls to compile numba function
         get_concentration_array((10, 10), (5, 5), 2, 0.1)
-        self.salpChain = SalpChain((1, 1), 2, (400, 400))
+        self.salpChain = SalpChain((1, 1), 3, (400, 400))
         self.salpChain.makeChain()
         self.salpChain.makeConnections()
 
