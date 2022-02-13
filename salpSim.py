@@ -6,6 +6,7 @@ from numba import jit
 from pymunk.vec2d import Vec2d
 from pymunk.constraints import DampedSpring
 
+
 space = pymunk.Space()
 space.damping = 0.8
 disp = 800
@@ -56,7 +57,8 @@ class Salp:
         self.body.position = pos
         self.shape = pymunk.Circle(self.body, self.radius)
         self.shape.density = 1
-        self.default_threshold = 0.001
+        self.default_threshold = 0.0001
+        self.threshold_constant = 0.0003
         self.threshold = self.default_threshold
         space.add(self.body, self.shape)
 
@@ -84,8 +86,7 @@ class Salp:
 
     def thresholdUpdate(self, origin, t, D):
         salpConc = self.getSalpConc(origin, t, D) / 255
-        thresholdConst = 0.00001
-        thresholdAdd = thresholdConst * (1 - self.default_threshold) * (1 - np.tanh(salpConc))
+        thresholdAdd = self.threshold_constant * (1 - self.default_threshold) * (1 - np.tanh(salpConc))
         return thresholdAdd
 
     def jetDecision(self, origin, t, D, thrustVec):
@@ -99,15 +100,18 @@ class Salp:
 # class for creating salp chain, grown from initial salp
 # forms chain of length number * 2 + 1
 # noinspection PyArgumentList
+
 class SalpChain:
-    def __init__(self, startVec: tuple, number, startPos: tuple):
+    def __init__(self, startVec: tuple, number, startPos: tuple, thresholdConst, defaultThresh):
         vecx, vecy = startVec
         self.startVec = Vec2d(vecx, vecy).normalized()
         self.number = number
         posx, posy = startPos
         self.startPos = Vec2d(posx, posy)
-        self.distance = 5
-        self.thrust = 1000
+        self.distance = 15
+        self.thrust = 1500
+        self.threshold_const = thresholdConst
+        self.default_threshold = defaultThresh
         self.salpList = []
         self.beamList = []
         self.flipDirection = True
@@ -116,6 +120,8 @@ class SalpChain:
         firstPos = self.startPos - (self.number * self.distance * self.startVec)
         for i in range(0, 2 * self.number + 1):
             salp = Salp(5, self.thrust, firstPos + (i * self.distance * self.startVec))
+            salp.threshold_constant = self.threshold_const
+            salp.default_threshold = self.default_threshold
             salp.draw()
             self.salpList.append(salp)
 
@@ -156,9 +162,13 @@ class SalpChain:
         salp = self.salpList[ndx]
         salp.jetPropel(self.getThrustVec(), 0.9, 0.5)
 
+    def getCenterPos(self):
+        centerNDx = int(len(self.salpList) / 2)
+        return self.salpList[centerNDx].get_game_position()
+
 
 class App:
-    def __init__(self, FPS):
+    def __init__(self, FPS, salpNum, thresholdConst, defaultThresh, thrust, distance):
         pygame.init()
         self.running = True
         self.fps = FPS
@@ -167,12 +177,20 @@ class App:
         self.unitClickPos = self.clickPos
         self.clickTime = 0
         self.clickFlag = False
-        self.diffCoeff = 0.0009
+        self.diffCoeff = 0.0007
         get_concentration_at_point((1, 1), (20, 20), 1, 0.1)  # dummy calls to compile numba function
         get_concentration_array((10, 10), (5, 5), 2, 0.1)
-        self.salpChain = SalpChain((1, 1), 3, (400, 400))
+        self.salpChain = SalpChain((1, 1), salpNum, (400, 400), thresholdConst, defaultThresh)
+        self.salpChain.thrust = thrust
+        self.salpChain.distance = distance
         self.salpChain.makeChain()
         self.salpChain.makeConnections()
+        self.fitness = 0
+
+    def getFitness(self):
+        centerPos = self.salpChain.getCenterPos()
+        posVec = Vec2d(self.clickPos) - Vec2d(centerPos)
+        return posVec.length
 
     def run(self):
         columns, rows = pygame.display.get_window_size()
@@ -180,7 +198,6 @@ class App:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.running = False
-                    pygame.image.save(screen, 'sample.png')
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if not self.clickFlag:
                         self.clickPos = pygame.mouse.get_pos()
@@ -194,6 +211,9 @@ class App:
             if self.clickFlag:
                 loopTime = pygame.time.get_ticks()
                 t = (loopTime - self.clickTime) / 1000
+                if t > 10:
+                    self.fitness = self.getFitness()
+                    break
                 arr = get_concentration_array((rows, columns), self.unitClickPos, t, self.diffCoeff)
                 grayscaleArr = gray(arr)
                 pygame.surfarray.blit_array(screen, grayscaleArr)
@@ -203,8 +223,10 @@ class App:
             pygame.display.update()
             self.clock.tick(self.fps)
             space.step(1 / self.fps)
+
         print(pygame.display.get_window_size())
         pygame.quit()
 
 
-App(15).run()
+if __name__ == '__main__':
+        App(15, 3, 0.0004, 0.002, 1000, 10).run()
