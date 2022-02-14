@@ -16,7 +16,7 @@ number of salps -
 
 # salp.App(FPS, salpNum, thresholdConst, defaultThresh, thrust, distance)
 sampleRun = salp.App(15, 3, 0.0004, 0.002, 1000, 10)
-sampleRun.run()
+sampleRun.run(300, 100)
 print(sampleRun.fitness)
 
 
@@ -27,6 +27,4 @@ def gen_mutants(salp: salp.App, volatility: float, num_mutants: int) -> list:
 
 
 def run_sim(salpList: list):
-
-
-def
+    return 0

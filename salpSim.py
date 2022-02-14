@@ -6,12 +6,10 @@ from numba import jit
 from pymunk.vec2d import Vec2d
 from pymunk.constraints import DampedSpring
 
-
 space = pymunk.Space()
 space.damping = 0.8
 disp = 800
 screen = pygame.display.set_mode((disp, disp))
-pygame.display.set_caption('Salp Search Simulation')
 
 
 def convert_coordinates(point, dispY):
@@ -115,6 +113,7 @@ class SalpChain:
         self.salpList = []
         self.beamList = []
         self.flipDirection = True
+        self.draw = False
 
     def makeChain(self):
         firstPos = self.startPos - (self.number * self.distance * self.startVec)
@@ -130,7 +129,8 @@ class SalpChain:
             salp1 = self.salpList[i]
             salp2 = self.salpList[i + 1]
             spring = DampedSpring(salp1.body, salp2.body, (0, 0), (0, 0), self.distance, 200, 20)
-            pygame.draw.aaline(screen, (0, 0, 0), salp1.get_game_position(), salp2.get_game_position())
+            if self.draw:
+                pygame.draw.aaline(screen, (0, 0, 0), salp1.get_game_position(), salp2.get_game_position())
             space.add(spring)
 
     def getThrustVec(self):
@@ -169,7 +169,7 @@ class SalpChain:
 
 class App:
     def __init__(self, FPS, salpNum, thresholdConst, defaultThresh, thrust, distance):
-        pygame.init()
+        self.disp = disp
         self.running = True
         self.fps = FPS
         self.clock = pygame.time.Clock()
@@ -177,7 +177,7 @@ class App:
         self.unitClickPos = self.clickPos
         self.clickTime = 0
         self.clickFlag = False
-        self.diffCoeff = 0.0007
+        self.diffCoeff = 0.002
         get_concentration_at_point((1, 1), (20, 20), 1, 0.1)  # dummy calls to compile numba function
         get_concentration_array((10, 10), (5, 5), 2, 0.1)
         self.salpChain = SalpChain((1, 1), salpNum, (400, 400), thresholdConst, defaultThresh)
@@ -186,14 +186,19 @@ class App:
         self.salpChain.makeChain()
         self.salpChain.makeConnections()
         self.fitness = 0
+        self.concCenter = (0, 0)
+        self.unitConcCenter = (0, 0)
+        self.runtime = 10
 
-    def getFitness(self):
-        centerPos = self.salpChain.getCenterPos()
-        posVec = Vec2d(self.clickPos) - Vec2d(centerPos)
-        return posVec.length
+    def reset_run(self):
+        self.running = True
 
-    def run(self):
+    def run_display(self):
+        pygame.display.set_caption('Salp Search Simulation')
+        pygame.init()
+        self.salpChain.draw = True
         columns, rows = pygame.display.get_window_size()
+
         while self.running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -201,6 +206,8 @@ class App:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if not self.clickFlag:
                         self.clickPos = pygame.mouse.get_pos()
+                        print(self.clickPos)
+                        pygame.draw.circle(screen, (255, 0, 0), self.clickPos, 7)
                         self.unitClickPos = (self.clickPos[0] / rows, self.clickPos[1] / columns)
                         self.clickTime = pygame.time.get_ticks()
                         self.clickFlag = not self.clickFlag
@@ -211,9 +218,6 @@ class App:
             if self.clickFlag:
                 loopTime = pygame.time.get_ticks()
                 t = (loopTime - self.clickTime) / 1000
-                if t > 10:
-                    self.fitness = self.getFitness()
-                    break
                 arr = get_concentration_array((rows, columns), self.unitClickPos, t, self.diffCoeff)
                 grayscaleArr = gray(arr)
                 pygame.surfarray.blit_array(screen, grayscaleArr)
@@ -224,9 +228,35 @@ class App:
             self.clock.tick(self.fps)
             space.step(1 / self.fps)
 
-        print(pygame.display.get_window_size())
+        pygame.quit()
+
+    def run(self, click_x, click_y):
+        self.reset_run()
+        self.concCenter = (click_x, click_y)
+        self.unitConcCenter = (float(click_x / self.disp), float(click_y / self.disp))
+        dt = 1 / self.fps
+
+        def getFitness():
+            chainCenter = self.salpChain.getCenterPos()
+            posVec = Vec2d(*self.concCenter) - Vec2d(*chainCenter)
+            return posVec.length
+
+        timeCounter = 0
+        while self.running:
+            t = (1 / self.fps) * timeCounter
+            self.salpChain.chainThrust(self.unitConcCenter, t, self.diffCoeff)
+            print(getFitness())
+            if t > self.runtime:
+                fitness = getFitness()
+                print(fitness)
+                self.running = False
+
+            timeCounter += 1
+            space.step(dt)
+
         pygame.quit()
 
 
+
 if __name__ == '__main__':
-        App(15, 3, 0.0004, 0.002, 1000, 10).run()
+    App(15, 3, 0.0004, 0.002, 1000, 10).run_display()
