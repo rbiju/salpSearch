@@ -1,8 +1,8 @@
 import numpy as np
 import salpSim as salp
-from importlib import reload
-
-reload(salp)
+# from importlib import reload
+#
+# reload(salp)
 
 # genetic algorithm to optimize salp simulation hyperparameters
 """ params to optimize:

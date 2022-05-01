@@ -9,7 +9,6 @@ from pymunk.constraints import DampedSpring
 space = pymunk.Space()
 space.damping = 0.8
 disp = 800
-screen = pygame.display.set_mode((disp, disp))
 
 
 def convert_coordinates(point, dispY):
@@ -58,11 +57,12 @@ class Salp:
         self.default_threshold = 0.0001
         self.threshold_constant = 0.0003
         self.threshold = self.default_threshold
+        self.screen = None
         space.add(self.body, self.shape)
 
     def draw(self):
         x, y = convert_coordinates(self.body.position, disp)
-        pygame.draw.circle(screen, (153, 255, 204), (x, y), self.radius)
+        pygame.draw.circle(self.screen, (153, 255, 204), (x, y), self.radius)
 
     def get_game_position(self):
         x, y = convert_coordinates(self.body.position, disp)
@@ -114,14 +114,18 @@ class SalpChain:
         self.beamList = []
         self.flipDirection = True
         self.draw = False
+        self.screen = None
 
     def makeChain(self):
         firstPos = self.startPos - (self.number * self.distance * self.startVec)
         for i in range(0, 2 * self.number + 1):
             salp = Salp(5, self.thrust, firstPos + (i * self.distance * self.startVec))
+            if self.draw:
+                salp.screen = self.screen
             salp.threshold_constant = self.threshold_const
             salp.default_threshold = self.default_threshold
-            salp.draw()
+            if self.draw:
+                salp.draw()
             self.salpList.append(salp)
 
     def makeConnections(self):
@@ -130,7 +134,7 @@ class SalpChain:
             salp2 = self.salpList[i + 1]
             spring = DampedSpring(salp1.body, salp2.body, (0, 0), (0, 0), self.distance, 200, 20)
             if self.draw:
-                pygame.draw.aaline(screen, (0, 0, 0), salp1.get_game_position(), salp2.get_game_position())
+                pygame.draw.aaline(self.screen, (0, 0, 0), salp1.get_game_position(), salp2.get_game_position())
             space.add(spring)
 
     def getThrustVec(self):
@@ -152,7 +156,7 @@ class SalpChain:
             salp1.draw()
             salp2 = self.salpList[i + 1]
             salp2.draw()
-            pygame.draw.aaline(screen, (0, 0, 0), salp1.get_game_position(), salp2.get_game_position())
+            pygame.draw.aaline(self.screen, (0, 0, 0), salp1.get_game_position(), salp2.get_game_position())
 
     def chainThrust(self, origin, t, D):
         for salp in self.salpList:
@@ -183,8 +187,6 @@ class App:
         self.salpChain = SalpChain((1, 1), salpNum, (400, 400), thresholdConst, defaultThresh)
         self.salpChain.thrust = thrust
         self.salpChain.distance = distance
-        self.salpChain.makeChain()
-        self.salpChain.makeConnections()
         self.fitness = 0
         self.concCenter = (0, 0)
         self.unitConcCenter = (0, 0)
@@ -194,9 +196,13 @@ class App:
         self.running = True
 
     def run_display(self):
+        screen = pygame.display.set_mode((self.disp, self.disp))
         pygame.display.set_caption('Salp Search Simulation')
         pygame.init()
         self.salpChain.draw = True
+        self.salpChain.screen = screen
+        self.salpChain.makeChain()
+        self.salpChain.makeConnections()
         columns, rows = pygame.display.get_window_size()
 
         while self.running:
@@ -230,10 +236,14 @@ class App:
 
         pygame.quit()
 
+# TODO instead of quitting run after runtime exceeded, clear simulation and start over to work around cffi error
     def run(self, click_x, click_y):
         self.reset_run()
         self.concCenter = (click_x, click_y)
         self.unitConcCenter = (float(click_x / self.disp), float(click_y / self.disp))
+        self.salpChain.draw = False
+        self.salpChain.makeChain()
+        self.salpChain.makeConnections()
         dt = 1 / self.fps
 
         def getFitness():
@@ -253,9 +263,6 @@ class App:
 
             timeCounter += 1
             space.step(dt)
-
-        pygame.quit()
-
 
 
 if __name__ == '__main__':
