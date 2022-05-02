@@ -11,7 +11,7 @@ To run the simulation, simply pip install the required modules from `requirement
 * numpy
 * numba (optional, but highly recommended for an FPS above 0.1).
 
-If you would like to simply run the classic simulation, v0/salpSearch has some decent starting parameters.
+If you would like to simply run the classic simulation, v0/salpSim.py has some decent starting parameters.
 
 An example of a simulation frame is shown below:
 
