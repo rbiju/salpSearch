@@ -9,7 +9,7 @@ To run the simulation, simply pip install the required modules from `requirement
 * pygame
 * pymunk
 * numpy
-* numba (optional, but highly recommended for an FPS above 0.1).
+* numba (highly recommended for an FPS above 0.1 lol).
 
 If you would like to simply run the classic simulation, v0/salpSim.py has some decent starting parameters.
 
