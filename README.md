@@ -5,10 +5,10 @@ yet they participate in chaining behavior that makes them uncanny at finding are
 reproduce this 'concentration gradient ascent' with a simple rule for each salp to follow.
 
 A simulation was coded in python using the pymunk physics engine to simulate chain behavior and the pygame module was used to render the results in real time.
-To run the simulation, simply install the required modules:
+To run the simulation, simply pip install the required modules from `requirements.txt`, the important ones are listed below:
 * pygame
 * pymunk
-* numpy,
+* numpy
 * numba (optional, but highly recommended for an FPS above 0.1).
 
 An example of a simulation frame is shown below:
