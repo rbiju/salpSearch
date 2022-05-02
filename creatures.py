@@ -31,17 +31,21 @@ class Salp(Creature):
     """
     Depends on PhysicsHandler and ConcentrationHandler abstractions.
     Salps can:
-    1. measure the concentration at their current location
-    2. modulate an internal action potential based on measured concentration
-    3. propel self by applying impulse through center of mass
+        - measure concentration at their current location
+        - modulate an internal action potential based on measured concentration
+        - propel self by applying impulse through center of mass
 
     kwargs:
-        Radius: Radius of salp (modeled as a circle for simplicity
-        Angle: Starting angle of salp, will be used as thrust direction
-        Thrust: Value of thrust to apply (1000 works well)
-        Action_potential_baseline: Value of ap after firing (drop to 'zero')
-        Action_potential_step: Amount to increase AP voltage given zero concentration at salp's location
-        -- (decreases as concentration rises)
+        radius: int
+            Radius of salp (modeled as a circle for simplicity
+        angle: int
+            Starting angle of salp, will be used as thrust direction
+        thrust: int
+            Value of thrust to apply (1000 works well)
+        action_potential_baseline: float
+            Value of ap after firing (drop to 'zero')
+        action_potential_step: float
+            Amount to increase AP voltage given zero concentration at salp's location (decreases as concentration rises)
     """
     def __init__(self, pos,
                  physics_handler: PhysicsHandler, concentration_handler: ConcentrationHandler,
@@ -62,6 +66,7 @@ class Salp(Creature):
     def get_conc(self) -> float:
         return self.concentration_handler.get_conc(self.body.position)
 
+    # TODO unit test
     def jet_propel(self, thrustVec: Vec2d) -> bool:
         seed = np.random.rand()
         if seed < self.voltage:
@@ -70,11 +75,13 @@ class Salp(Creature):
         else:
             return False
 
+    # TODO unit test
     def threshold_update(self):
         salpConc = self.get_conc() / 255
         ap_step = self.action_potential_step * (1 - np.tanh(salpConc))
         return ap_step
 
+    # TODO unit test
     def jet_decision(self):
         thrust_vec = Vec2d(0, 1) * self.body.angle
         if self.jet_propel(thrust_vec):

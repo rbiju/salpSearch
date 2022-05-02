@@ -236,7 +236,7 @@ class App:
 
         pygame.quit()
 
-# TODO instead of quitting run after runtime exceeded, clear simulation and start over to work around cffi error
+    # FIXME instead of quitting run after runtime exceeded, clear simulation and start over to work around cffi error
     def run(self, click_x, click_y):
         self.reset_run()
         self.concCenter = (click_x, click_y)

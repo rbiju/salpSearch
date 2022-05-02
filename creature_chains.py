@@ -7,6 +7,10 @@ class CreatureChain(ABC):
     def __init__(self):
         pass
 
+    @abstractmethod
+    def make_chain(self):
+        raise NotImplementedError
+
 
 class SalpChain():
     def __init__(self, physics_handler: PhysicsHandler,
