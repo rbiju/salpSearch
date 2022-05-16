@@ -53,8 +53,9 @@ class Salp(Creature):
         super().__init__(physics_handler, concentration_handler, **kwargs)
         self.physics_handler = physics_handler
         self.concentration_handler = concentration_handler
+        self.pos = pos
         self.radius = kwargs['radius']
-        self.body = self.physics_handler.create_body(self.radius, pos)
+        self.body = self.physics_handler.create_body(self.radius, self.pos)
         self.body.angle = radians(kwargs['angle'])
         self.thrust = kwargs['thrust']
 
@@ -63,8 +64,18 @@ class Salp(Creature):
         self.action_potential_step = kwargs['action_potential_step']
         self.voltage = self.action_potential_baseline
 
+        self.physics_handler.add_body(self.body)
+
+    @property
+    def pos(self):
+        return self.body.position
+
+    @pos.setter
+    def pos(self, pos):
+        self.pos = pos
+
     def get_conc(self) -> float:
-        return self.concentration_handler.get_conc(self.body.position)
+        return self.concentration_handler.get_conc(self.pos)
 
     # TODO unit test
     def jet_propel(self, thrustVec: Vec2d) -> bool:

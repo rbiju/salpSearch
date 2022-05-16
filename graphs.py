@@ -5,7 +5,7 @@ from typing import List
 
 class CreatureGraph(ABC):
     def __init__(self, **kwargs):
-        self.graph = None
+        self.num_creatures = None
 
     # TODO unit test
     @staticmethod
@@ -16,10 +16,12 @@ class CreatureGraph(ABC):
 
         return deduplicated_graph
 
+    @property
     @abstractmethod
     def graph(self) -> List:
         raise NotImplementedError
 
+    @property
     @abstractmethod
     def positions(self) -> List[tuple]:
         raise NotImplementedError
