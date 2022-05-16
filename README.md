@@ -15,4 +15,4 @@ If you would like to simply run the classic simulation, v0/salpSim.py has some d
 
 An example of a simulation frame is shown below:
 
-![Tangled chain of small circles near a blurry dark circle on a white background](img.png)
+![Tangled chain of small circles near a blurry dark circle on a white background](imgs/img.png)
