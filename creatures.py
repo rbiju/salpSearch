@@ -4,7 +4,7 @@ from math import radians
 import numpy as np
 from pymunk.vec2d import Vec2d
 
-from handlers import PhysicsHandler, ConcentrationHandler
+from handlers import CreaturePhysicsHandler, ConcentrationHandler
 
 
 # space = pymunk.Space()
@@ -16,6 +16,7 @@ class Creature(ABC):
     def __init__(self, physics_handler, concentration_handler, **kwargs):
         self.physics_handler = physics_handler
         self.concentration_handler = concentration_handler
+        self.body = None
         pass
 
     @abstractmethod
@@ -47,8 +48,9 @@ class Salp(Creature):
         action_potential_step: float
             Amount to increase AP voltage given zero concentration at salp's location (decreases as concentration rises)
     """
+
     def __init__(self, pos,
-                 physics_handler: PhysicsHandler, concentration_handler: ConcentrationHandler,
+                 physics_handler: CreaturePhysicsHandler, concentration_handler: ConcentrationHandler,
                  **kwargs):
         super().__init__(physics_handler, concentration_handler, **kwargs)
         self.physics_handler = physics_handler

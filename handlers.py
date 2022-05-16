@@ -1,10 +1,14 @@
 from abc import ABC, abstractmethod
 
+from math import radians
+
 import pygame
 import pymunk
+from pymunk.constraints import DampedSpring, RotaryLimitJoint, PinJoint
 from helpers import FastFunctions, convert_coordinates
 
 
+# Render Handlers
 class RenderHandler(ABC):
     def __init__(self):
         pass
@@ -40,7 +44,8 @@ class PygameHandler(RenderHandler):
         pygame.draw.aaline(self.screen, (0, 0, 0), self.get_game_position(salp1), self.get_game_position(salp2))
 
 
-class PhysicsHandler(ABC):
+# Physics Handlers
+class CreaturePhysicsHandler(ABC):
     def __init__(self):
         pass
 
@@ -53,10 +58,19 @@ class PhysicsHandler(ABC):
         raise NotImplementedError
 
 
-class SalpPhysicsHandler(PhysicsHandler):
+class LinkHandler(ABC):
     def __init__(self):
         super().__init__()
-        self.space = pymunk.Space()
+
+    @abstractmethod
+    def add_link(self, body1, body2):
+        raise NotImplementedError
+
+
+class SalpPhysicsHandler(CreaturePhysicsHandler):
+    def __init__(self, space: pymunk.Space):
+        super().__init__()
+        self.space = space
 
     def create_body(self, radius, pos):
         body = pymunk.Body(mass=1, moment=10)
@@ -71,6 +85,75 @@ class SalpPhysicsHandler(PhysicsHandler):
         self.space.add(body, shape)
 
 
+class PinHandler(LinkHandler):
+    def __init__(self, space: pymunk.Space):
+        super().__init__()
+        self.space = space
+
+    def add_link(self, body1, body2):
+        link = PinJoint(body1, body2, (0, 0), (0, 0))
+        self.space.add(link)
+
+
+class RotaryLimitHandler(LinkHandler):
+    def __init__(self, space: pymunk.Space):
+        super().__init__()
+        self.space = space
+        self._max = radians(-20)
+        self._min = radians(20)
+
+    @property
+    def _min(self):
+        return self._min
+
+    @_min.setter
+    def _min(self, _min):
+        self._min = _min
+
+    @property
+    def _max(self):
+        return self._max
+
+    @_max.setter
+    def _max(self, _max):
+        self._max = _max
+
+    def add_link(self, body1, body2):
+        link = RotaryLimitJoint(body1, body2, min=self._min, max=self._max)
+        self.space.add(link)
+
+
+class DampedSpringHandler(LinkHandler):
+    def __init__(self, space: pymunk.Space):
+        super().__init__()
+        self.space = space
+        self.stiffness = 200
+        self.damping = 20
+
+    @property
+    def stiffness(self):
+        return self.stiffness
+
+    @stiffness.setter
+    def stiffness(self, stiffness):
+        self.stiffness = stiffness
+
+    @property
+    def damping(self):
+        return self.damping
+
+    @damping.setter
+    def damping(self, damping):
+        self.damping = damping
+
+    def add_link(self, body1, body2):
+        rest_length = (body1.pos - body2.pos).length
+        link = DampedSpring(body1, body2, (0, 0), (0, 0), rest_length=rest_length,
+                            stiffness=self.stiffness, damping=self.damping)
+        self.space.add(link)
+
+
+# Concentration Handlers
 class ConcentrationHandler(ABC):
     def __init__(self):
         pass
