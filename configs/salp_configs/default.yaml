@@ -1,0 +1,23 @@
+Root:
+  Creature:
+    type: Salp
+    kwargs:
+      radius: 5
+      thrust: 1000
+      action_potential_baseline: 0.0001
+      action_potential_step: 0.0003
+      angle: 135
+
+  LinkHandler:
+    type: RotaryLimitHandler
+    kwargs:
+      min: -10
+      max: 10
+
+  CreatureGraph:
+    type: LinearChain
+    kwargs:
+      num_creatures: 8
+      starting_point: (400, 400)
+      direction_vector: (-1, 1)
+      distance: 15

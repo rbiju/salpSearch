@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 
 from math import radians
 import numpy as np
+import pymunk
 from pymunk.vec2d import Vec2d
 
 from handlers import CreaturePhysicsHandler, ConcentrationHandler
@@ -17,7 +18,18 @@ class Creature(ABC):
         self.physics_handler = physics_handler
         self.concentration_handler = concentration_handler
         self.body = None
+        self.pos: pymunk.vec2d
         pass
+
+    @property
+    @abstractmethod
+    def pos(self):
+        return self.body.position
+
+    @pos.setter
+    @abstractmethod
+    def pos(self, pos):
+        self.pos = pos
 
     @abstractmethod
     def get_conc(self):
@@ -25,6 +37,10 @@ class Creature(ABC):
 
     @abstractmethod
     def jet_propel(self, thrustVec):
+        raise NotImplementedError
+
+    @abstractmethod
+    def jet_decision(self):
         raise NotImplementedError
 
 

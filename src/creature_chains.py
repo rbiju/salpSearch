@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from typing import List
+import math
 
 from graphs import CreatureGraph
 from creatures import Creature
@@ -9,10 +10,22 @@ from handlers import LinkHandler
 
 class CreatureChain(ABC):
     def __init__(self):
+        self.creature_list: List[Creature]
         pass
 
     @abstractmethod
     def make_chain(self):
+        """Creates chain of creatures and links between them"""
+        raise NotImplementedError
+
+    @abstractmethod
+    def run_chain(self):
+        """Invokes jet propel method on all creatures in creature_list"""
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_center(self):
+        """Returns physics position of center of chain"""
         raise NotImplementedError
 
 
@@ -41,3 +54,15 @@ class SalpChain(CreatureChain):
         for key in graph:
             for val in graph[key]:
                 self.link_handler.add_link(self.creature_list[key].body, self.creature_list[val].body)
+
+    def run_chain(self):
+        for creature in self.creature_list:
+            creature.jet_decision()
+
+    def get_center(self):
+        if self.graph.num_creatures % 2 == 1:
+            center_ndx = math.floor(self.graph.num_creatures / 2)
+            return self.creature_list[center_ndx].pos
+        else:
+            center_ndx = self.graph.num_creatures / 2
+            return (self.creature_list[center_ndx].pos + self.creature_list[center_ndx - 1].pos) / 2.0

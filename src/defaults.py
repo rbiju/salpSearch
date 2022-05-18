@@ -1,1 +1,0 @@
-default_salp_kwargs = {'radius': 5, 'thrust': 1000, 'action_potential_baseline': 0.0001, 'action_potential_step': 0.0003, 'angle': 135}
