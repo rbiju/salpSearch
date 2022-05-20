@@ -9,9 +9,16 @@ from handlers import LinkHandler
 
 
 class CreatureChain(ABC):
-    def __init__(self):
-        self.creature_list: List[Creature]
+    def __init__(self, creature: Creature, creature_graph: CreatureGraph, link_handler: LinkHandler):
+        self.creature = creature
+        self.graph = creature_graph
+        self.link_handler = link_handler
+        self.creature_list: List[Creature] = self.create_creature_list()
         pass
+
+    @abstractmethod
+    def create_creature_list(self) -> List[Creature]:
+        raise NotImplementedError
 
     @abstractmethod
     def make_chain(self):

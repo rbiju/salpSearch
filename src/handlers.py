@@ -1,9 +1,11 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 
 from math import radians
 
 import pygame
 import pymunk
+from pymunk import Vec2d
 from pymunk.constraints import DampedSpring, RotaryLimitJoint, PinJoint
 from helpers import FastFunctions, convert_coordinates
 
@@ -46,7 +48,8 @@ class PygameHandler(RenderHandler):
 
 # Physics Handlers
 class CreaturePhysicsHandler(ABC):
-    def __init__(self):
+    def __init__(self, space: pymunk.Space):
+        self.space = space
         pass
 
     @abstractmethod
@@ -154,8 +157,20 @@ class DampedSpringHandler(LinkHandler):
 
 
 # Concentration Handlers
+@dataclass
+class ConcentrationSpace:
+    origin: pymunk.Vec2d = Vec2d(0, 0)
+    t: float = 0
+
+    def step(self, dt):
+        self.t += dt
+
+
 class ConcentrationHandler(ABC):
-    def __init__(self):
+    """Needs to be updated every frame with the time"""
+
+    def __init__(self, concentration_space: ConcentrationSpace):
+        self.concentration_space = concentration_space
         pass
 
     @abstractmethod
@@ -164,16 +179,18 @@ class ConcentrationHandler(ABC):
 
 
 class FicksConcentrationHandler(ConcentrationHandler):
-    def __init__(self):
+    def __init__(self, concentration_space: ConcentrationSpace):
         super().__init__()
         self.ff = FastFunctions()
-        self.origin = None
-        self.t = None
+        self.concentration_space = concentration_space
         self.D = None
-        self.scale_factor = 500
+        self.disp = 800
 
     def scale_position(self, pos):
-        return pos.x / self.scale_factor, pos.y / self.scale_factor
+        return pos.x / self.disp, pos.y / self.disp
 
     def get_conc(self, pos):
-        return self.ff.ficks(self.scale_position(pos), self.scale_position(self.origin), self.t, self.D)
+        return self.ff.ficks(self.scale_position(pos),
+                             self.scale_position(self.concentration_space.origin),
+                             self.concentration_space.t,
+                             self.D)

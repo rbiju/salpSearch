@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Dict
 
 from math import radians
 import numpy as np
@@ -14,7 +15,15 @@ from handlers import CreaturePhysicsHandler, ConcentrationHandler
 
 
 class Creature(ABC):
-    def __init__(self, physics_handler, concentration_handler, **kwargs):
+    """Abstract class representing various creature types
+    Creatures should:
+        - measure concentration
+        - be aware of their position
+        - propel self within simulation
+    """
+    def __init__(self, physics_handler: CreaturePhysicsHandler,
+                 concentration_handler: ConcentrationHandler,
+                 **kwargs: Dict[str: any]):
         self.physics_handler = physics_handler
         self.concentration_handler = concentration_handler
         self.body = None
