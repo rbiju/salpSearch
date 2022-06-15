@@ -1,0 +1,19 @@
+creature_chain:
+  _target_: creature_chains.SalpChain
+  _partial_: true
+
+  creature_graph:
+    _target_: graphs.LinearChain
+    num_creatures: 8
+    starting_point:
+      - 400
+      - 400
+    direction_vector:
+      - -1
+      - 1
+    distance: 15
+
+  link_handler:
+    _target_: handlers.RotaryLimitHandler
+    min: -10
+    max: 10

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict
+from typing import Dict, Tuple
 
 from math import radians
 import numpy as np
@@ -15,19 +15,19 @@ from handlers import CreaturePhysicsHandler, ConcentrationHandler
 
 
 class Creature(ABC):
-    """Abstract class representing various creature types
+    """Abstract class representing various salp types
     Creatures should:
         - measure concentration
         - be aware of their position
         - propel self within simulation
     """
-    def __init__(self, physics_handler: CreaturePhysicsHandler,
+    def __init__(self, pos: Tuple[float, float], physics_handler: CreaturePhysicsHandler,
                  concentration_handler: ConcentrationHandler,
                  **kwargs: Dict[str: any]):
         self.physics_handler = physics_handler
         self.concentration_handler = concentration_handler
-        self.body = None
-        self.pos: pymunk.vec2d
+        self.body: pymunk.Body = pymunk.Body()
+        self.pos: pymunk.vec2d = Vec2d(*pos)
         pass
 
     @property
@@ -37,8 +37,8 @@ class Creature(ABC):
 
     @pos.setter
     @abstractmethod
-    def pos(self, pos):
-        self.pos = pos
+    def pos(self, pos: Tuple[float, float]):
+        self.pos = Vec2d(*pos)
 
     @abstractmethod
     def get_conc(self):
@@ -74,21 +74,21 @@ class Salp(Creature):
             Amount to increase AP voltage given zero concentration at salp's location (decreases as concentration rises)
     """
 
-    def __init__(self, pos,
+    def __init__(self, pos: Tuple[float, float],
                  physics_handler: CreaturePhysicsHandler, concentration_handler: ConcentrationHandler,
                  **kwargs):
-        super().__init__(physics_handler, concentration_handler, **kwargs)
+        super().__init__(pos, physics_handler, concentration_handler, **kwargs)
         self.physics_handler = physics_handler
         self.concentration_handler = concentration_handler
-        self.pos = pos
-        self.radius = kwargs['radius']
+        self.pos: Vec2d = Vec2d(*pos)
+        self.radius: int = kwargs['radius']
         self.body = self.physics_handler.create_body(self.radius, self.pos)
         self.body.angle = radians(kwargs['angle'])
-        self.thrust = kwargs['thrust']
+        self.thrust: int = kwargs['thrust']
 
         # action potential properties
-        self.action_potential_baseline = kwargs['action_potential_baseline']
-        self.action_potential_step = kwargs['action_potential_step']
+        self.action_potential_baseline: float = kwargs['action_potential_baseline']
+        self.action_potential_step: float = kwargs['action_potential_step']
         self.voltage = self.action_potential_baseline
 
         self.physics_handler.add_body(self.body)
@@ -98,8 +98,8 @@ class Salp(Creature):
         return self.body.position
 
     @pos.setter
-    def pos(self, pos):
-        self.pos = pos
+    def pos(self, pos: Tuple[float, float]):
+        self.pos = Vec2d(*pos)
 
     def get_conc(self) -> float:
         return self.concentration_handler.get_conc(self.pos)
@@ -121,7 +121,7 @@ class Salp(Creature):
 
     # TODO unit test
     def jet_decision(self):
-        thrust_vec = Vec2d(0, 1) * self.body.angle
+        thrust_vec = Vec2d(0, 1).rotated(self.body.angle)
         if self.jet_propel(thrust_vec):
             self.voltage = self.action_potential_baseline
         elif not self.jet_propel(thrust_vec):

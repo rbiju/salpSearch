@@ -1,0 +1,14 @@
+creature:
+  _target_: creatures.Salp
+  radius: 5
+  thrust: 1000
+  action_potential_baseline: 0.0001
+  action_potential_step: 0.0003
+
+  physics_handler:
+    space: 'physics_space'
+    damping: 0.8
+
+  concentration_handler:
+    space: 'concentration_space'
+    type: 'FicksConcentrationHandler'

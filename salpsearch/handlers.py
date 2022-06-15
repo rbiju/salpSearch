@@ -61,19 +61,9 @@ class CreaturePhysicsHandler(ABC):
         raise NotImplementedError
 
 
-class LinkHandler(ABC):
-    def __init__(self):
-        super().__init__()
-
-    @abstractmethod
-    def add_link(self, body1, body2):
-        raise NotImplementedError
-
-
 class SalpPhysicsHandler(CreaturePhysicsHandler):
     def __init__(self, space: pymunk.Space):
-        super().__init__()
-        self.space = space
+        super().__init__(space=space)
 
     def create_body(self, radius, pos):
         body = pymunk.Body(mass=1, moment=10)
@@ -86,6 +76,15 @@ class SalpPhysicsHandler(CreaturePhysicsHandler):
 
     def add_body(self, body, shape):
         self.space.add(body, shape)
+
+
+class LinkHandler(ABC):
+    def __init__(self):
+        super().__init__()
+
+    @abstractmethod
+    def add_link(self, body1, body2):
+        raise NotImplementedError
 
 
 class PinHandler(LinkHandler):
@@ -102,27 +101,27 @@ class RotaryLimitHandler(LinkHandler):
     def __init__(self, space: pymunk.Space):
         super().__init__()
         self.space = space
-        self._max = radians(-20)
-        self._min = radians(20)
+        self.max = radians(-20)
+        self.min = radians(20)
 
     @property
-    def _min(self):
-        return self._min
+    def min(self):
+        return self.min
 
-    @_min.setter
-    def _min(self, _min):
-        self._min = _min
+    @min.setter
+    def min(self, min):
+        self.min = radians(min)
 
     @property
-    def _max(self):
-        return self._max
+    def max(self):
+        return self.max
 
-    @_max.setter
-    def _max(self, _max):
-        self._max = _max
+    @max.setter
+    def max(self, max):
+        self.max = radians(max)
 
     def add_link(self, body1, body2):
-        link = RotaryLimitJoint(body1, body2, min=self._min, max=self._max)
+        link = RotaryLimitJoint(body1, body2, min=self.min, max=self.max)
         self.space.add(link)
 
 
@@ -157,18 +156,24 @@ class DampedSpringHandler(LinkHandler):
 
 
 # Concentration Handlers
-@dataclass
 class ConcentrationSpace:
-    origin: pymunk.Vec2d = Vec2d(0, 0)
-    t: float = 0
+    def __init__(self, origin):
+        self.origin: tuple = origin
+        self.t: float = 0
+
+    @property
+    def origin(self):
+        return Vec2d(self.origin)
+
+    @origin.setter
+    def origin(self, origin: tuple):
+        self.origin = origin
 
     def step(self, dt):
         self.t += dt
 
 
 class ConcentrationHandler(ABC):
-    """Needs to be updated every frame with the time"""
-
     def __init__(self, concentration_space: ConcentrationSpace):
         self.concentration_space = concentration_space
         pass
@@ -180,9 +185,8 @@ class ConcentrationHandler(ABC):
 
 class FicksConcentrationHandler(ConcentrationHandler):
     def __init__(self, concentration_space: ConcentrationSpace):
-        super().__init__()
+        super().__init__(concentration_space=concentration_space)
         self.ff = FastFunctions()
-        self.concentration_space = concentration_space
         self.D = None
         self.disp = 800
 

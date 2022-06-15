@@ -53,6 +53,8 @@ class SalpChain(CreatureChain):
             pos = self.graph.positions[i]
             temp_creature = deepcopy(self.creature)
             temp_creature.pos = pos
+            angle = self.graph.direction_vector.angle
+            temp_creature.body.angle = angle
             creature_list.append(temp_creature)
         return creature_list
 
@@ -68,8 +70,8 @@ class SalpChain(CreatureChain):
 
     def get_center(self):
         if self.graph.num_creatures % 2 == 1:
-            center_ndx = math.floor(self.graph.num_creatures / 2)
+            center_ndx = int(math.floor(self.graph.num_creatures / 2))
             return self.creature_list[center_ndx].pos
         else:
-            center_ndx = self.graph.num_creatures / 2
+            center_ndx = int(self.graph.num_creatures / 2)
             return (self.creature_list[center_ndx].pos + self.creature_list[center_ndx - 1].pos) / 2.0
